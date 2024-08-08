@@ -34,8 +34,8 @@ export class HyperliquidAPI {
     private readonly httpApi: HttpApi;
     private isValidPrivateKey: boolean = false;
 
-    constructor(privateKey: string | null = null) {
-        const baseURL = IS_MAINNET ? BASE_URLS.PRODUCTION : BASE_URLS.TESTNET;
+    constructor(privateKey: string | null = null, isMainnet: true | false = IS_MAINNET) {
+        const baseURL = isMainnet ? BASE_URLS.PRODUCTION : BASE_URLS.TESTNET;
 
         this.rateLimiter = new RateLimiter();
         this.assetToIndexMap = new Map();
@@ -86,7 +86,7 @@ export class HyperliquidAPI {
     private async refreshAssetToIndexMap(): Promise<void> {
         try {
             // Fetch both perpetual and spot metadata concurrently for efficiency
-            const [perpMeta, spotMeta] = await Promise.all([
+            const [perpMetaResponse, spotMetaResponse] = await Promise.all([
                 this.httpApi.makeRequest({ type: INFO_TYPES.PERPS_META_AND_ASSET_CTXS }),
                 this.httpApi.makeRequest({ type: INFO_TYPES.SPOT_META_AND_ASSET_CTXS })
             ]);
@@ -96,37 +96,31 @@ export class HyperliquidAPI {
             this.exchangeToInternalNameMap.clear();
 
             // Handle perpetual assets
-            if (perpMeta && perpMeta.meta && Array.isArray(perpMeta.meta.universe)) {
-                perpMeta.meta.universe.forEach((asset: { name: string }, index: number) => {
-                    // Create an internal name for the perpetual asset by appending '-PERP'
+            if (Array.isArray(perpMetaResponse) && perpMetaResponse.length > 0 && perpMetaResponse[0].universe) {
+                perpMetaResponse[0].universe.forEach((asset: { name: string }, index: number) => {
                     const internalName = `${asset.name}-PERP`;
-                    // Map the internal name to its index in the universe array
                     this.assetToIndexMap.set(internalName, index);
-                    // Map the exchange name to our internal name for easy lookup
                     this.exchangeToInternalNameMap.set(asset.name, internalName);
                 });
             }
 
             // Handle spot assets
-            if (spotMeta && spotMeta.meta && Array.isArray(spotMeta.meta.universe)) {
-                spotMeta.meta.universe.forEach((market: any, index: number) => {
-                    // Check if the market has tokens and the tokens array exists in the metadata
-                    if (spotMeta.meta.tokens && Array.isArray(spotMeta.meta.tokens) && market.tokens && market.tokens.length > 0) {
-                        // Get the token object for the first token in the market
-                        const token = spotMeta.meta.tokens[market.tokens[0]];
-                        if (token && token.name) {
-                            // Create an internal name for the spot asset by appending '-SPOT'
-                            const internalName = `${token.name}-SPOT`;
-                            // Map the internal name to its index, offsetting by 10000 to avoid conflicts with perp indices
+            if (Array.isArray(spotMetaResponse) && spotMetaResponse.length > 0 && spotMetaResponse[0].universe) {
+                spotMetaResponse[0].universe.forEach((market: { name: string, tokens: number[] }, index: number) => {
+                    if (spotMetaResponse[0].tokens && Array.isArray(spotMetaResponse[0].tokens)) {
+                        const baseToken = spotMetaResponse[0].tokens[market.tokens[0]];
+                        if (baseToken && baseToken.name) {
+                            const internalName = `${baseToken.name}-SPOT`;
                             this.assetToIndexMap.set(internalName, 10000 + index);
-                            // Map the market name to our internal name for easy lookup
                             this.exchangeToInternalNameMap.set(market.name, internalName);
                         }
                     }
                 });
             }
+
+            console.log("Asset maps refreshed successfully");
+
         } catch (error) {
-            // Log any errors that occur during the refresh process
             console.error('Failed to refresh asset maps:', error);
         }
     }
