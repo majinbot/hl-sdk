@@ -1,12 +1,12 @@
 import { ethers } from 'ethers';
-import { GeneralInfoAPI } from './info/general';
+import { InfoAPI } from './info';
 import { ExchangeAPI } from './exchange';
 import type { UserOpenOrders, CancelOrderRequest } from '../types';
 import type { CancelOrderResponse } from '../utils/signing';
 
 export class CustomOperations {
     private readonly exchange: ExchangeAPI;
-    private readonly infoApi: GeneralInfoAPI;
+    private readonly infoApi: InfoAPI;
     private readonly wallet: ethers.Wallet;
     private readonly exchangeToInternalNameMap: Map<string, string>;
     private readonly assetToIndexMap: Map<string, number>;
@@ -14,7 +14,7 @@ export class CustomOperations {
 
     constructor(
         exchange: ExchangeAPI,
-        infoApi: GeneralInfoAPI,
+        infoApi: InfoAPI,
         privateKey: string,
         exchangeToInternalNameMap: Map<string, string>,
         assetToIndexMap: Map<string, number>,

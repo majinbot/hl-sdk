@@ -444,3 +444,33 @@ export type WsUserNonFundingLedgerUpdates = {
     isSnapshot: boolean;
     updates: WsUserNonFundingLedgerUpdate[];
 };
+
+// Leaderboard
+export type TimeWindow = 'day' | 'week' | 'month' | 'allTime' | 'perpDay' | 'perpWeek' | 'perpMonth' | 'perpAllTime';
+
+export interface Performance {
+    pnl: string;
+    roi: string;
+    vlm: string;
+}
+
+export interface LeaderboardEntry {
+    ethAddress: string;
+    accountValue: string;
+    windowPerformances: [TimeWindow, Performance][];
+    prize: number;
+    displayName: string | null;
+}
+
+export interface LeaderboardResponse {
+    leaderboardRows: LeaderboardEntry[];
+}
+
+export interface LeaderboardFilter {
+    timeWindow?: TimeWindow;
+    minAccountValue?: number;
+    minVolume?: number;
+    minPnL?: number;
+    minRoi?: number;
+    maxAccounts?: number;
+}

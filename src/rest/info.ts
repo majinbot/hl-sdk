@@ -20,6 +20,7 @@ export class InfoAPI {
     public readonly perpetuals: PerpsInfoAPI;
     private readonly httpApi: HttpApi;
     private readonly generalAPI: GeneralInfoAPI;
+
     private readonly assetToIndexMap: Map<string, number>;
     private readonly exchangeToInternalNameMap: Map<string, string>;
     private readonly initializationPromise: Promise<void>;

@@ -32,6 +32,7 @@ export const INFO_TYPES = {
     SPOT_META: 'spotMeta',
     SPOT_CLEARINGHOUSE_STATE: 'spotClearinghouseState',
     SPOT_META_AND_ASSET_CTXS: 'spotMetaAndAssetCtxs',
+    LEADERBOARD: 'leaderboard',
 } as const;
 
 export const EXCHANGE_TYPES = {
