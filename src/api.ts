@@ -8,7 +8,7 @@ import { BASE_URLS, ENDPOINTS, INFO_TYPES } from './constants';
 import { CustomOperations } from './rest/custom';
 import { Wallet } from 'ethers';
 import { IS_MAINNET } from './config';
-import {LeaderboardAPI} from "./rest/info/leaderboard.ts";
+import { LeaderboardAPI } from './rest/info/leaderboard.ts';
 
 class AuthenticationError extends Error {
     constructor(message: string) {
@@ -44,7 +44,13 @@ export class HyperliquidAPI {
 
         this.initializationPromise = this.initialize();
 
-        this.info = new InfoAPI(baseURL, this.rateLimiter, this.assetToIndexMap, this.exchangeToInternalNameMap, this.initializationPromise);
+        this.info = new InfoAPI(
+            baseURL,
+            this.rateLimiter,
+            this.assetToIndexMap,
+            this.exchangeToInternalNameMap,
+            this.initializationPromise
+        );
         this.ws = new WebSocketClient(!IS_MAINNET);
         this.subscriptions = new WebSocketSubscriptions(this.ws);
 
@@ -62,10 +68,12 @@ export class HyperliquidAPI {
         return new Proxy({} as T, {
             get: (target, prop) => {
                 if (!this.isValidPrivateKey) {
-                    throw new AuthenticationError('Invalid or missing private key. This method requires authentication.');
+                    throw new AuthenticationError(
+                        'Invalid or missing private key. This method requires authentication.'
+                    );
                 }
                 return target[prop as keyof T];
-            }
+            },
         });
     }
 
@@ -74,11 +82,25 @@ export class HyperliquidAPI {
             const formattedPrivateKey = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
             new Wallet(formattedPrivateKey); // Validate the private key
 
-            this.exchange = new ExchangeAPI(baseURL, formattedPrivateKey, this.rateLimiter, this.assetToIndexMap, this.exchangeToInternalNameMap, this.initializationPromise);
-            this.custom = new CustomOperations(this.exchange, this.info, formattedPrivateKey, this.exchangeToInternalNameMap, this.assetToIndexMap, this.initializationPromise);
+            this.exchange = new ExchangeAPI(
+                baseURL,
+                formattedPrivateKey,
+                this.rateLimiter,
+                this.assetToIndexMap,
+                this.exchangeToInternalNameMap,
+                this.initializationPromise
+            );
+            this.custom = new CustomOperations(
+                this.exchange,
+                this.info,
+                formattedPrivateKey,
+                this.exchangeToInternalNameMap,
+                this.assetToIndexMap,
+                this.initializationPromise
+            );
             this.isValidPrivateKey = true;
         } catch (error) {
-            console.warn("Invalid private key provided. Some functionalities will be limited.");
+            console.warn('Invalid private key provided. Some functionalities will be limited.');
             this.isValidPrivateKey = false;
         }
     }
@@ -88,7 +110,7 @@ export class HyperliquidAPI {
             // Fetch both perpetual and spot metadata concurrently for efficiency
             const [perpMetaResponse, spotMetaResponse] = await Promise.all([
                 this.httpApi.makeRequest({ type: INFO_TYPES.PERPS_META_AND_ASSET_CTXS }),
-                this.httpApi.makeRequest({ type: INFO_TYPES.SPOT_META_AND_ASSET_CTXS })
+                this.httpApi.makeRequest({ type: INFO_TYPES.SPOT_META_AND_ASSET_CTXS }),
             ]);
 
             // Clear existing maps to ensure we're working with fresh data
@@ -106,7 +128,7 @@ export class HyperliquidAPI {
 
             // Handle spot assets
             if (Array.isArray(spotMetaResponse) && spotMetaResponse.length > 0 && spotMetaResponse[0].universe) {
-                spotMetaResponse[0].universe.forEach((market: { name: string, tokens: number[] }, index: number) => {
+                spotMetaResponse[0].universe.forEach((market: { name: string; tokens: number[] }, index: number) => {
                     if (spotMetaResponse[0].tokens && Array.isArray(spotMetaResponse[0].tokens)) {
                         const baseToken = spotMetaResponse[0].tokens[market.tokens[0]];
                         if (baseToken && baseToken.name) {
@@ -118,8 +140,7 @@ export class HyperliquidAPI {
                 });
             }
 
-            console.log("Asset maps refreshed successfully");
-
+            console.log('Asset maps refreshed successfully');
         } catch (error) {
             console.error('Failed to refresh asset maps:', error);
         }
@@ -157,7 +178,7 @@ export class HyperliquidAPI {
         return this.assetToIndexMap.get(assetSymbol);
     }
 
-    public getAllAssets(): { perp: string[], spot: string[] } {
+    public getAllAssets(): { perp: string[]; spot: string[] } {
         const perp: string[] = [];
         const spot: string[] = [];
 
@@ -179,7 +200,7 @@ export class HyperliquidAPI {
     async connect(): Promise<void> {
         await this.ws.connect();
         if (!this.isValidPrivateKey) {
-            console.warn("Not authenticated. Some WebSocket functionalities may be limited.");
+            console.warn('Not authenticated. Some WebSocket functionalities may be limited.');
         }
     }
 

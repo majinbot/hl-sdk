@@ -7,13 +7,21 @@ export class WebSocketClient extends EventEmitter {
     private readonly url: string;
     private pingInterval: Timer | null = null;
     private reconnectAttempts: number = 0;
-    private readonly maxReconnectAttempts: number = 5;
-    private readonly reconnectDelay: number = 5000;
-    private readonly pingIntervalMs: number = 30000;
+    private readonly maxReconnectAttempts: number;
+    private readonly reconnectDelay: number;
+    private readonly pingIntervalMs: number;
 
-    constructor(testnet: boolean = false) {
+    constructor(
+        testnet: boolean = false,
+        maxReconnectAttempts: number = 5,
+        reconnectDelay: number = 5000,
+        pingIntervalMs: number = 30000
+    ) {
         super();
         this.url = testnet ? WSS_URLS.TESTNET : WSS_URLS.PRODUCTION;
+        this.maxReconnectAttempts = maxReconnectAttempts;
+        this.reconnectDelay = reconnectDelay;
+        this.pingIntervalMs = pingIntervalMs;
     }
 
     connect(): Promise<void> {
@@ -90,10 +98,10 @@ export class WebSocketClient extends EventEmitter {
     }
 
     sendMessage(message: any): void {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        if (!this.isConnected()) {
             throw new Error('WebSocket is not connected');
         }
-        this.ws.send(JSON.stringify(message));
+        this.ws!.send(JSON.stringify(message));
     }
 
     close(): void {
@@ -101,5 +109,9 @@ export class WebSocketClient extends EventEmitter {
             this.ws.close();
         }
         this.stopPingInterval();
+    }
+
+    isConnected(): boolean {
+        return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
     }
 }

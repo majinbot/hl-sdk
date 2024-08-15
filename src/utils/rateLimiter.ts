@@ -13,12 +13,12 @@ export class RateLimiter {
 
     async waitForToken(weight: number = 1): Promise<void> {
         if (weight > this.capacity) {
-            throw new Error("Requested tokens exceed capacity");
+            throw new Error('Requested tokens exceed capacity');
         }
 
         await this.refillTokens();
         while (this.tokens < weight) {
-            const waitTime = (weight - this.tokens) / this.refillRate * 1000;
+            const waitTime = ((weight - this.tokens) / this.refillRate) * 1000;
             await new Promise(resolve => setTimeout(resolve, waitTime));
             await this.refillTokens();
         }

@@ -1,5 +1,3 @@
-// /tests/api.test.ts
-
 import { expect, test, describe } from "bun:test";
 import { HyperliquidAPI } from "../src/api";
 import { HyperliquidAPIError } from "../src/utils/errors";

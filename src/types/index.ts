@@ -445,6 +445,27 @@ export type WsUserNonFundingLedgerUpdates = {
     updates: WsUserNonFundingLedgerUpdate[];
 };
 
+export type WsSubscriptionType =
+    | 'allMids'
+    | 'notification'
+    | 'webData2'
+    | 'candle'
+    | 'l2Book'
+    | 'trades'
+    | 'orderUpdates'
+    | 'userEvents'
+    | 'userFills'
+    | 'userFundings'
+    | 'userNonFundingLedgerUpdates';
+
+export interface WsSubscriptionMessage {
+    method: 'subscribe' | 'unsubscribe';
+    subscription: {
+        type: WsSubscriptionType;
+        [key: string]: any;
+    };
+}
+
 // Leaderboard
 export type TimeWindow = 'day' | 'week' | 'month' | 'allTime' | 'perpDay' | 'perpWeek' | 'perpMonth' | 'perpAllTime';
 

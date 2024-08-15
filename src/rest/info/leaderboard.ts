@@ -1,6 +1,6 @@
-import type {HttpApi} from "../../utils/helpers.ts";
-import type {LeaderboardEntry, LeaderboardFilter, LeaderboardResponse, TimeWindow} from "../../types";
-import {INFO_TYPES} from "../../constants.ts";
+import type { HttpApi } from '../../utils/helpers.ts';
+import type { LeaderboardEntry, LeaderboardFilter, LeaderboardResponse, TimeWindow } from '../../types';
+import { INFO_TYPES } from '../../constants.ts';
 
 export class LeaderboardAPI {
     private httpApi: HttpApi;
@@ -15,15 +15,12 @@ export class LeaderboardAPI {
         this.httpApi = httpApi;
         this.cache = {
             data: null,
-            timestamp: 0
+            timestamp: 0,
         };
     }
 
     private isCacheValid(): boolean {
-        return (
-            this.cache.data !== null &&
-            Date.now() - this.cache.timestamp < this.cacheExpiryMs
-        );
+        return this.cache.data !== null && Date.now() - this.cache.timestamp < this.cacheExpiryMs;
     }
 
     async getLeaderboard(): Promise<LeaderboardResponse> {
@@ -39,7 +36,7 @@ export class LeaderboardAPI {
             // Update cache
             this.cache = {
                 data: leaderboard,
-                timestamp: Date.now()
+                timestamp: Date.now(),
             };
 
             return leaderboard;
@@ -58,13 +55,15 @@ export class LeaderboardAPI {
     async clearCache(): Promise<void> {
         this.cache = {
             data: null,
-            timestamp: 0
+            timestamp: 0,
         };
     }
 
     filterLeaderboard(leaderboard: LeaderboardResponse, filter: LeaderboardFilter): LeaderboardEntry[] {
         let filteredEntries = leaderboard.leaderboardRows.filter(entry => {
-            const performance = entry.windowPerformances.find(([window]) => window === (filter.timeWindow || 'allTime'))?.[1];
+            const performance = entry.windowPerformances.find(
+                ([window]) => window === (filter.timeWindow || 'allTime')
+            )?.[1];
 
             if (!performance) return false;
 
@@ -84,7 +83,11 @@ export class LeaderboardAPI {
         return filteredEntries;
     }
 
-    sortLeaderboard(entries: LeaderboardEntry[], sortBy: 'pnl' | 'roi' | 'vlm' | 'accountValue', timeWindow: TimeWindow = 'allTime'): LeaderboardEntry[] {
+    sortLeaderboard(
+        entries: LeaderboardEntry[],
+        sortBy: 'pnl' | 'roi' | 'vlm' | 'accountValue',
+        timeWindow: TimeWindow = 'allTime'
+    ): LeaderboardEntry[] {
         return entries.sort((a, b) => {
             if (sortBy === 'accountValue') {
                 return parseFloat(b.accountValue) - parseFloat(a.accountValue);

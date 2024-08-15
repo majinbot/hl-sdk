@@ -1,5 +1,5 @@
 import { encode } from '@msgpack/msgpack';
-import {ethers, getBytes, HDNodeWallet, keccak256, type Wallet} from 'ethers';
+import { ethers, getBytes, HDNodeWallet, keccak256, type Wallet } from 'ethers';
 
 import type { OrderType, Signature, OrderRequest, CancelOrderRequest, OrderWire } from '../types';
 import { IS_MAINNET } from '../config.ts';
