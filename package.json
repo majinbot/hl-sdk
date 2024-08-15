@@ -1,6 +1,6 @@
 {
   "name": "hyperliquid-ts",
-  "version": "1.0.0",
+  "version": "1.0",
   "description": "\uD83E\uDE96 Unofficial TypeScript SDK for Hyperliquid",
   "main": "dist/index.js",
   "module": "dist/index.js",
