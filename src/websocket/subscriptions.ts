@@ -141,9 +141,14 @@ export class WebSocketSubscriptions {
 
     async subscribeToCandle(coin: string, interval: string, callback: (data: Candle[]) => void): Promise<void> {
         await this.ensureInitialized();
-        const convertedCoin = this.convertSymbol(coin, 'reverse');
+        const convertedCoin = this.convertSymbol(coin, "reverse");
         this.subscribe({ type: 'candle', coin: convertedCoin, interval });
-        this.addSubscription('candle', callback);
+        this.ws.on('message', (message: any) => {
+            if (message.channel === 'candle' && message.data.s === convertedCoin && message.data.i === interval) {
+                const convertedData = this.convertSymbolsInObject(message.data, ["s"]);
+                callback([convertedData]); // Wrap the single Candle in an array
+            }
+        });
     }
 
     async subscribeToL2Book(coin: string, callback: (data: WsBook) => void): Promise<void> {

@@ -26,7 +26,7 @@ describe("HyperliquidAPI WebSocket", () => {
 
     test("API has loaded assets", () => {
         const assets = api.getAllAssets();
-        console.log("Loaded assets:", assets);
+        console.log("Loaded assets", `perps (#${assets.perp.length})`, `spot (#${assets.spot.length})`);
         expect(assets.perp.length).toBeGreaterThan(0);
         expect(assets.spot.length).toBeGreaterThan(0);
     });
@@ -40,7 +40,6 @@ describe("HyperliquidAPI WebSocket", () => {
 
         const callback = (data: AllMids) => {
             clearTimeout(timeout);
-            console.log("Received allMids data:", data);
             expect(data).toBeDefined();
             expect(Object.keys(data).length).toBeGreaterThan(0);
             api.subscriptions.unsubscribeFromAllMids(callback);
@@ -69,7 +68,6 @@ describe("HyperliquidAPI WebSocket", () => {
 
         const callback = (data: WsTrade[]) => {
             clearTimeout(timeout);
-            console.log(`Received trade data for ${symbol}:`, data);
             expect(Array.isArray(data)).toBe(true);
             if (data.length > 0) {
                 expect(data[0]).toHaveProperty('coin');
@@ -104,7 +102,6 @@ describe("HyperliquidAPI WebSocket", () => {
 
         const callback = (data: WsBook) => {
             clearTimeout(timeout);
-            console.log(`Received L2 book data for ${symbol}:`, data);
             expect(data).toHaveProperty('coin');
             expect(data).toHaveProperty('levels');
             expect(Array.isArray(data.levels)).toBe(true);
@@ -136,16 +133,18 @@ describe("HyperliquidAPI WebSocket", () => {
 
         const callback = (data: Candle[]) => {
             clearTimeout(timeout);
-            console.log(`Received candle data for ${symbol}:`, data);
+            expect(data).toBeDefined();
             expect(Array.isArray(data)).toBe(true);
-            if (data.length > 0) {
-                expect(data[0]).toHaveProperty('t');
-                expect(data[0]).toHaveProperty('o');
-                expect(data[0]).toHaveProperty('h');
-                expect(data[0]).toHaveProperty('l');
-                expect(data[0]).toHaveProperty('c');
-                expect(data[0]).toHaveProperty('v');
-            }
+            expect(data.length).toBe(1);
+
+            const candle = data[0];
+            expect(candle).toHaveProperty('t');
+            expect(candle).toHaveProperty('o');
+            expect(candle).toHaveProperty('h');
+            expect(candle).toHaveProperty('l');
+            expect(candle).toHaveProperty('c');
+            expect(candle).toHaveProperty('v');
+
             api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
             done();
         };

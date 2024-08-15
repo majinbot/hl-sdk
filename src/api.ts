@@ -148,7 +148,9 @@ export class HyperliquidAPI {
         return new Proxy({} as T, {
             get: (target, prop) => {
                 if (!this.isValidPrivateKey) {
-                    throw new AuthenticationError('Invalid or missing private key. This method requires authentication.');
+                    throw new AuthenticationError(
+                        'Invalid or missing private key. This method requires authentication.'
+                    );
                 }
                 return target[prop as keyof T];
             },
@@ -258,8 +260,7 @@ export class HyperliquidAPI {
      * @returns The corresponding exchange asset name, or undefined if not found.
      */
     public getExchangeName(internalName: string): string | undefined {
-        return Array.from(this.exchangeToInternalNameMap.entries())
-            .find(([, name]) => name === internalName)?.[0];
+        return Array.from(this.exchangeToInternalNameMap.entries()).find(([, name]) => name === internalName)?.[0];
     }
 
     /**
