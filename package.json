@@ -1,6 +1,6 @@
 {
   "name": "hyperliquid-ts",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "\uD83E\uDE96 Unofficial TypeScript SDK for Hyperliquid",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -10,7 +10,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist && tsc --emitDeclarationOnly --outDir dist",
+    "build": "bun build ./src/index.ts --outdir ./dist && bun run tsc --emitDeclarationOnly --outDir dist",
     "test": "bun test",
     "lint": "bun eslint . --ext .ts",
     "format": "bun x prettier --write \"src/**/*.ts\"",
