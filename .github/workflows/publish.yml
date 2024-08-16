@@ -33,8 +33,9 @@ jobs:
       - name: Run tests
         run: bun test
 
-      - name: Build
-        run: bun run build
+      - name: Login to npm
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
 
       - name: Publish to NPM
         run: bun run publish
