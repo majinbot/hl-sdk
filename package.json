@@ -1,6 +1,6 @@
 {
   "name": "hyperliquid-ts",
-  "version": "1.1",
+  "version": "1.0",
   "description": "\uD83E\uDE96 Unofficial TypeScript SDK for Hyperliquid",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -14,7 +14,8 @@
     "test": "bun test",
     "lint": "bun eslint . --ext .ts",
     "format": "bun x prettier --write \"src/**/*.ts\"",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "publish": "npm publish"
   },
   "keywords": [
     "hyperliquid",
