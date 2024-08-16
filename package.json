@@ -14,8 +14,7 @@
     "test": "bun test",
     "lint": "bun eslint . --ext .ts",
     "format": "bun x prettier --write \"src/**/*.ts\"",
-    "prepublishOnly": "bun run build",
-    "publish": "npm publish --access public"
+    "prepublishOnly": "bun run build"
   },
   "keywords": [
     "hyperliquid",

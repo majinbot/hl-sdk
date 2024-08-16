@@ -3,7 +3,7 @@
 An unofficial TypeScript SDK for interacting with the Hyperliquid API.
 
 ## Installation
-[![npm version](https://badge.fury.io/js/%40majinbot%2Fhyperliquid-ts.svg)](https://badge.fury.io/js/%40majinbot%2Fhyperliquid-ts)
+[![npm version](https://badge.fury.io/js/hyperliquid-ts.svg)](https://badge.fury.io/js/hyperliquid-ts)
 ```bash
 npm install hyperliquid-ts
 ```
