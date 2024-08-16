@@ -7,6 +7,8 @@ import type {
     Candle
 } from "../src";
 
+const WS_TIMEOUT = 15000; // 15 secs
+
 describe("HyperliquidAPI WebSocket", () => {
     let api: HyperliquidAPI;
 
@@ -42,7 +44,7 @@ describe("HyperliquidAPI WebSocket", () => {
             console.log("No allMids data received within 5 seconds");
             api.subscriptions.unsubscribeFromAllMids(callback);
             done();
-        }, 5000);
+        }, WS_TIMEOUT);
 
         const callback = (data: AllMids) => {
             clearTimeout(timeout);
@@ -70,7 +72,7 @@ describe("HyperliquidAPI WebSocket", () => {
             console.log(`No trade data received for ${symbol} within 5 seconds`);
             api.subscriptions.unsubscribeFromTrades(symbol, callback);
             done();
-        }, 5000);
+        }, WS_TIMEOUT);
 
         const callback = (data: WsTrade[]) => {
             clearTimeout(timeout);
@@ -104,7 +106,7 @@ describe("HyperliquidAPI WebSocket", () => {
             console.log(`No L2 book data received for ${symbol} within 5 seconds`);
             api.subscriptions.unsubscribeFromL2Book(symbol, callback);
             done();
-        }, 5000);
+        }, WS_TIMEOUT);
 
         const callback = (data: WsBook) => {
             clearTimeout(timeout);
@@ -135,7 +137,7 @@ describe("HyperliquidAPI WebSocket", () => {
             const timeout = setTimeout(() => {
                 api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
                 reject(new Error(`No candle data received for ${symbol} within 10 seconds`));
-            }, 10000);
+            }, WS_TIMEOUT);
 
             const callback = (data: Candle[]) => {
                 clearTimeout(timeout);
@@ -167,7 +169,7 @@ describe("HyperliquidAPI WebSocket", () => {
                 reject(error);
             }
         });
-    }, 15000);
+    }, WS_TIMEOUT);
 
     test("Post request", async () => {
         const response = await api.subscriptions.postRequest('info', { type: 'meta' });
