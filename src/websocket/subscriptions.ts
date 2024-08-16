@@ -18,7 +18,7 @@ export class WebSocketSubscriptions {
     private ws: WebSocketClient;
     private subscriptions: Map<string, Set<(data: any) => void>> = new Map();
     private exchangeToInternalNameMap: Map<string, string>;
-    private initializationPromise: Promise<void>;
+    private readonly initializationPromise: Promise<void>;
 
     constructor(
         ws: WebSocketClient,
@@ -141,11 +141,11 @@ export class WebSocketSubscriptions {
 
     async subscribeToCandle(coin: string, interval: string, callback: (data: Candle[]) => void): Promise<void> {
         await this.ensureInitialized();
-        const convertedCoin = this.convertSymbol(coin, "reverse");
+        const convertedCoin = this.convertSymbol(coin, 'reverse');
         this.subscribe({ type: 'candle', coin: convertedCoin, interval });
         this.ws.on('message', (message: any) => {
             if (message.channel === 'candle' && message.data.s === convertedCoin && message.data.i === interval) {
-                const convertedData = this.convertSymbolsInObject(message.data, ["s"]);
+                const convertedData = this.convertSymbolsInObject(message.data, ['s']);
                 callback([convertedData]); // Wrap the single Candle in an array
             }
         });

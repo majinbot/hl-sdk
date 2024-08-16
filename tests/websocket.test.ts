@@ -1,4 +1,4 @@
-import { expect, test, describe, beforeAll, afterAll } from "bun:test";
+import {expect, test, describe, beforeAll, afterAll, beforeEach} from "bun:test";
 import { HyperliquidAPI } from "../src/api";
 import type {
     AllMids,
@@ -13,12 +13,18 @@ describe("HyperliquidAPI WebSocket", () => {
     beforeAll(async () => {
         api = new HyperliquidAPI();
         await api.ensureInitialized();
-        await api.connect();
+    });
+
+    beforeEach(async () => {
+        if (!api.ws.isConnected()) {
+            await api.connect();
+        }
     });
 
     afterAll(() => {
         api.disconnect();
     });
+
 
     test("WebSocket connection can be established", () => {
         expect(api.ws).toBeDefined();
@@ -119,42 +125,52 @@ describe("HyperliquidAPI WebSocket", () => {
         }
     });
 
-    test("Subscribe to candles", (done) => {
+    test("Subscribe to candles", async () => {
         const assets = api.getAllAssets();
         const symbol = assets.perp[0];
         const interval = '5m';
         console.log(`Subscribing to candles for symbol: ${symbol}, interval: ${interval}`);
 
-        const timeout = setTimeout(() => {
-            console.log(`No candle data received for ${symbol} within 5 seconds`);
-            api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
-            done();
-        }, 5000);
+        return new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
+                reject(new Error(`No candle data received for ${symbol} within 10 seconds`));
+            }, 10000);
 
-        const callback = (data: Candle[]) => {
-            clearTimeout(timeout);
-            expect(data).toBeDefined();
-            expect(Array.isArray(data)).toBe(true);
-            expect(data.length).toBe(1);
+            const callback = (data: Candle[]) => {
+                clearTimeout(timeout);
+                try {
+                    expect(data).toBeDefined();
+                    expect(Array.isArray(data)).toBe(true);
+                    expect(data.length).toBe(1);
 
-            const candle = data[0];
-            expect(candle).toHaveProperty('t');
-            expect(candle).toHaveProperty('o');
-            expect(candle).toHaveProperty('h');
-            expect(candle).toHaveProperty('l');
-            expect(candle).toHaveProperty('c');
-            expect(candle).toHaveProperty('v');
+                    const candle = data[0];
+                    expect(candle).toHaveProperty('t');
+                    expect(candle).toHaveProperty('o');
+                    expect(candle).toHaveProperty('h');
+                    expect(candle).toHaveProperty('l');
+                    expect(candle).toHaveProperty('c');
+                    expect(candle).toHaveProperty('v');
 
-            api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
-            done();
-        };
+                    api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
+                    resolve();
+                } catch (error) {
+                    api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
+                    reject(error);
+                }
+            };
 
-        try {
-            api.subscriptions.subscribeToCandle(symbol, interval, callback);
-        } catch (error) {
-            clearTimeout(timeout);
-            console.error("Error in candles subscription:", error);
-            done(error as Error);
-        }
+            try {
+                api.subscriptions.subscribeToCandle(symbol, interval, callback);
+            } catch (error) {
+                clearTimeout(timeout);
+                reject(error);
+            }
+        });
+    }, 15000);
+
+    test("Post request", async () => {
+        const response = await api.subscriptions.postRequest('info', { type: 'meta' });
+        expect(response).toBeDefined();
     });
 });

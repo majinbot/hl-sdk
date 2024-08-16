@@ -10,6 +10,9 @@ export class WebSocketClient extends EventEmitter {
     private readonly maxReconnectAttempts: number;
     private readonly reconnectDelay: number;
     private readonly pingIntervalMs: number;
+    private isReconnecting: boolean = false;
+    private messageQueue: any[] = [];
+    private connectionPromise: Promise<void> | null = null;
 
     constructor(
         testnet: boolean = false,
@@ -24,12 +27,19 @@ export class WebSocketClient extends EventEmitter {
         this.pingIntervalMs = pingIntervalMs;
     }
 
-    connect(): Promise<void> {
-        return new Promise((resolve, reject) => {
+    async connect(): Promise<void> {
+        if (this.connectionPromise) {
+            return this.connectionPromise;
+        }
+
+        this.connectionPromise = new Promise((resolve, reject) => {
             this.ws = new WebSocket(this.url);
 
             this.ws.on('open', () => {
-                this.onOpen();
+                this.onOpen().catch(error => {
+                    console.error('Error during onOpen:', error);
+                    reject(error);
+                });
                 resolve();
             });
 
@@ -46,12 +56,17 @@ export class WebSocketClient extends EventEmitter {
                 this.onClose();
             });
         });
+
+        return this.connectionPromise;
     }
 
-    private onOpen(): void {
+    private async onOpen(): Promise<void> {
         console.log('WebSocket connected');
         this.reconnectAttempts = 0;
+        this.isReconnecting = false;
         this.startPingInterval();
+        this.emit('open');
+        await this.flushMessageQueue();
     }
 
     private onMessage(data: WebSocket.Data): void {
@@ -65,28 +80,61 @@ export class WebSocketClient extends EventEmitter {
 
     private onError(error: Error): void {
         console.error('WebSocket error:', error);
+        this.emit('error', error);
     }
 
     private onClose(): void {
         console.log('WebSocket disconnected');
         this.stopPingInterval();
-        this.reconnect();
+        this.connectionPromise = null;
+        this.emit('close');
+        if (!this.isReconnecting) {
+            this.reconnect().catch(error => {
+                console.error('Reconnection failed:', error);
+                this.emit('reconnectFailed', error);
+            });
+        }
     }
 
-    private reconnect(): void {
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+    private async reconnect(): Promise<void> {
+        if (this.isReconnecting) return;
+        this.isReconnecting = true;
+
+        while (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-            setTimeout(() => this.connect(), this.reconnectDelay);
-        } else {
-            console.error('Max reconnection attempts reached. Please reconnect manually.');
-            this.emit('maxReconnectAttemptsReached');
+            try {
+                await this.connect();
+                return;
+            } catch (error) {
+                console.error('Reconnection attempt failed:', error);
+                await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
+            }
+        }
+
+        this.isReconnecting = false;
+        console.error('Max reconnection attempts reached. Please reconnect manually.');
+        this.emit('maxReconnectAttemptsReached');
+        throw new Error('Max reconnection attempts reached');
+    }
+
+    public async ensureConnected(): Promise<void> {
+        if (!this.isConnected()) {
+            try {
+                await this.connect();
+            } catch (error) {
+                console.error('Failed to ensure connection:', error);
+                throw error;
+            }
         }
     }
 
     private startPingInterval(): void {
+        this.stopPingInterval();
         this.pingInterval = setInterval(() => {
-            this.sendMessage({ method: 'ping' });
+            this.sendMessage({ method: 'ping' }).catch(error => {
+                console.error('Failed to send ping:', error);
+            });
         }, this.pingIntervalMs);
     }
 
@@ -97,18 +145,33 @@ export class WebSocketClient extends EventEmitter {
         }
     }
 
-    sendMessage(message: any): void {
-        if (!this.isConnected()) {
-            throw new Error('WebSocket is not connected');
+    async sendMessage(message: any): Promise<void> {
+        await this.ensureConnected();
+        if (this.isConnected()) {
+            this.ws!.send(JSON.stringify(message));
+        } else {
+            this.messageQueue.push(message);
         }
-        this.ws!.send(JSON.stringify(message));
+    }
+
+    private async flushMessageQueue(): Promise<void> {
+        const promises: Promise<void>[] = [];
+        while (this.messageQueue.length > 0) {
+            const message = this.messageQueue.shift();
+            promises.push(this.sendMessage(message));
+        }
+        await Promise.all(promises);
     }
 
     close(): void {
+        this.stopPingInterval();
         if (this.ws) {
             this.ws.close();
+            this.ws = null;
         }
-        this.stopPingInterval();
+        this.connectionPromise = null;
+        this.isReconnecting = false;
+        this.messageQueue = [];
     }
 
     isConnected(): boolean {
