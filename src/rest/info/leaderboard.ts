@@ -193,7 +193,6 @@ export class LeaderboardAPI {
                 this.getPerpPositions(trader),
                 this.getSpotPositions(trader),
             ]);
-
             return { perp: perpPositions, spot: spotPositions };
         } catch (error) {
             console.error(`Failed to fetch open positions for trader ${trader}:`, error);

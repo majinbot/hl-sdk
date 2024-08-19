@@ -1,6 +1,8 @@
-import {HyperliquidAPI} from "../../src";
-import type { BestTrade, LeaderboardFilter, TimeWindow, TraderPosition, UserFill } from "../../src";
 import {Color, t} from "tasai";
+import {format} from "date-fns";
+import {HyperliquidAPI} from "../../src";
+import type { LeaderboardFilter, TimeWindow, TraderPosition } from "../../src";
+
 const highlight = t.bold.cyan.toFunction();
 const header = t.bold.underline.magenta.toFunction();
 const subHeader = t.bold.yellow.toFunction();
@@ -22,11 +24,11 @@ async function runLeaderboardAnalysis() {
 
     const filter: LeaderboardFilter = {
         timeWindow: 'month' as TimeWindow,
-        minAccountValue: 100_000,
-        minVolume: 1_000_000,
+        minAccountValue: 500_000,
+        minVolume: 500_000,
         maxVolume: 100_000_000,
-        minPnL: 10_000,
-        minRoi: 0.5,
+        minPnL: 15_000, // 15k$
+        minRoi: 1.1, // 110%
         maxAccounts: 3
         // This adds majorly to HL API usage
         //maxTrades: 1000
@@ -89,7 +91,7 @@ async function runLeaderboardAnalysis() {
                         console.log(`  Leverage: ${levColor(bestTrade.leverage + 'x')}`);
                     }
                     console.log(`  PnL: ${formatPnL(bestTrade.closedPnl)}`);
-                    console.log(`  Time: ${new Date(bestTrade.time).toLocaleString()}`);
+                    console.log(`  Time: ${format(new Date(bestTrade.time), 'yyyy-MM-dd HH:mm:ss')}`);
                     if (bestTrade.liquidation) {
                         console.log(highlight("  Liquidation:"));
                         console.log(`    Liquidated User: ${value(bestTrade.liquidation.liquidatedUser)}`);
@@ -109,7 +111,7 @@ async function runLeaderboardAnalysis() {
 }
 
 function displayPosition(position: TraderPosition) {
-    console.log(`    ${ticker(position.asset)}: ${value(formatNumber(position.size, 4))} ${position.entryPrice ? `@ $${value(formatNumber(position.entryPrice))}` : ''}`);
+    console.log(`    ${ticker(position.asset)}: ${value(formatNumber(position.size, 4))} ${position.entryPrice ? `@ $${value(formatNumber(position.entryPrice))}` : ''} (opened at: ${Date.now()}`);
     if (position.unrealizedPnl !== null) {
         console.log(`      Unrealized PnL: ${formatPnL(position.unrealizedPnl.toString())}`);
     }

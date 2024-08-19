@@ -21,15 +21,20 @@ api.info.getAllMids().then(allMids => {
 ```
 Note: Private key is optional but required for authenticated endpoints.
 
-## API Structure
-The SDK is structured into several main components:
+## APIs
+The SDK is structured into several major components/classes covering the main HL APIs:
 
 - info: General information endpoints
+  - base
+  - general
+  - perps
+  - spot
+  - leaderboard
 - exchange: Trading and account management endpoints
 - subscriptions: WebSocket subscriptions
 - custom: Custom utility methods and endpoints
 
-Info API
+## Info API
 Access general market information:
 ```typescript
 // Get all mids
@@ -136,7 +141,7 @@ try {
 The SDK implements rate limiting to comply with API restrictions. You don't need to manage this manually.
 
 ## WebSocket Connection
-The WebSocket connection is managed automatically. Use the connect() and disconnect() methods if you need manual control:
+The WebSocket connection is managed automatically. Use `connect` and `disconnect` methods if you need manual control:
 ```typescript
 await api.connect();
 // ... perform operations
