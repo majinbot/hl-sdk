@@ -491,7 +491,18 @@ export interface LeaderboardFilter {
     timeWindow?: TimeWindow;
     minAccountValue?: number;
     minVolume?: number;
+    maxVolume?: number;
     minPnL?: number;
     minRoi?: number;
     maxAccounts?: number;
+    maxTrades?: number;
+}
+
+export interface TraderPosition {
+    asset: string;
+    size: number;
+    entryPrice: number;
+    leverage: number;
+    unrealizedPnl: number;
+    liquidationPrice: number;
 }
