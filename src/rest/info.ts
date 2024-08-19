@@ -19,7 +19,7 @@ export class InfoAPI {
     public readonly spot: SpotInfoAPI;
     public readonly perpetuals: PerpsInfoAPI;
     private readonly httpApi: HttpApi;
-    private readonly generalAPI: GeneralInfoAPI;
+    public readonly generalAPI: GeneralInfoAPI;
 
     private readonly assetToIndexMap: Map<string, number>;
     private readonly exchangeToInternalNameMap: Map<string, string>;
@@ -74,7 +74,20 @@ export class InfoAPI {
         return this.generalAPI.getUserFills(user, raw_response);
     }
 
+    async getTradeInfo(user: string, orderId: number): Promise<any> {
+        return this.generalAPI.getTradeInfo(user, orderId);
+    }
+
     async getUserFillsByTime(
+        user: string,
+        startTime: number,
+        endTime: number,
+        raw_response: boolean = false
+    ): Promise<UserFills> {
+        return this.generalAPI.getUserFillsByTime(user, startTime, endTime, raw_response);
+    }
+
+    async getSpotUserFillsByTime(
         user: string,
         startTime: number,
         endTime: number,

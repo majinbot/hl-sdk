@@ -8,6 +8,7 @@ export * from './rest/custom';
 export * from './rest/info/general';
 export * from './rest/info/perps';
 export * from './rest/info/spot';
+export * from './rest/info/leaderboard';
 
 // Export WebSocket components
 export * from './websocket/connection';

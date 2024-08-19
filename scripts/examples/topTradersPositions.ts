@@ -1,5 +1,5 @@
-import { HyperliquidAPI } from "../../src";
-import type { LeaderboardFilter, TimeWindow, TraderPosition } from "../../src";
+import {HyperliquidAPI} from "../../src";
+import type { BestTrade, LeaderboardFilter, TimeWindow, TraderPosition, UserFill } from "../../src";
 import {Color, t} from "tasai";
 const highlight = t.bold.cyan.toFunction();
 const header = t.bold.underline.magenta.toFunction();
@@ -28,6 +28,8 @@ async function runLeaderboardAnalysis() {
         minPnL: 10_000,
         minRoi: 0.5,
         maxAccounts: 3
+        // This adds majorly to HL API usage
+        //maxTrades: 1000
     };
 
     try {
@@ -74,15 +76,26 @@ async function runLeaderboardAnalysis() {
                 }
 
                 // Fetch and display best trade
-                const bestTrade = await getBestTrade(api, trader.ethAddress, filter.timeWindow!);
+                const bestTrade = await api.leaderboard.getBestTrade(trader.ethAddress, filter.timeWindow!);
                 if (bestTrade) {
                     console.log(subHeader("\nBest Trade:"));
                     console.log(`  Asset: ${ticker(bestTrade.coin)}`);
+                    console.log(`  Market: ${value(bestTrade.isPerp ? 'Perpetual' : 'Spot')}`);
                     console.log(`  Side: ${bestTrade.side === 'buy' ? positive(bestTrade.side) : negative(bestTrade.side)}`);
                     console.log(`  Price: ${value('$' + formatNumber(bestTrade.px))}`);
                     console.log(`  Size: ${value(formatNumber(bestTrade.sz, 4))}`);
+                    if (bestTrade.isPerp && bestTrade.leverage !== 1) {
+                        const levColor = leverageColor(bestTrade.leverage!);
+                        console.log(`  Leverage: ${levColor(bestTrade.leverage + 'x')}`);
+                    }
                     console.log(`  PnL: ${formatPnL(bestTrade.closedPnl)}`);
                     console.log(`  Time: ${new Date(bestTrade.time).toLocaleString()}`);
+                    if (bestTrade.liquidation) {
+                        console.log(highlight("  Liquidation:"));
+                        console.log(`    Liquidated User: ${value(bestTrade.liquidation.liquidatedUser)}`);
+                        console.log(`    Mark Price: ${value('$' + formatNumber(bestTrade.liquidation.markPx))}`);
+                        console.log(`    Method: ${value(bestTrade.liquidation.method)}`);
+                    }
                 } else {
                     console.log(negative("\nNo trades found for this period"));
                 }
@@ -96,35 +109,13 @@ async function runLeaderboardAnalysis() {
 }
 
 function displayPosition(position: TraderPosition) {
-    console.log(`    ${ticker(position.asset)}: ${value(formatNumber(position.size, 4))} @ $${value(formatNumber(position.entryPrice))}`);
-    if (position.unrealizedPnl) {
+    console.log(`    ${ticker(position.asset)}: ${value(formatNumber(position.size, 4))} ${position.entryPrice ? `@ $${value(formatNumber(position.entryPrice))}` : ''}`);
+    if (position.unrealizedPnl !== null) {
         console.log(`      Unrealized PnL: ${formatPnL(position.unrealizedPnl.toString())}`);
     }
-    if (position.leverage && position.leverage !== 1) {
+    if (position.leverage !== 1) {
         const leverageStyled = leverageColor(position.leverage)(`${position.leverage}x`);
         console.log(`      Leverage: ${leverageStyled}`);
-    }
-}
-
-async function getBestTrade(api: HyperliquidAPI, trader: string, timeWindow: TimeWindow) {
-    const endTime = Date.now();
-    const startTime = getStartTimeForWindow(timeWindow);
-    const trades = await api.info.getUserFillsByTime(trader, startTime, endTime);
-    return trades.reduce((best, current) => {
-        if (!best || parseFloat(current.closedPnl) > parseFloat(best.closedPnl)) {
-            return current;
-        }
-        return best;
-    }, null as any);
-}
-
-function getStartTimeForWindow(timeWindow: TimeWindow): number {
-    const now = Date.now();
-    switch (timeWindow) {
-        case 'day': return now - 24 * 60 * 60 * 1000;
-        case 'week': return now - 7 * 24 * 60 * 60 * 1000;
-        case 'month': return now - 30 * 24 * 60 * 60 * 1000;
-        default: return 0; // For 'allTime', return 0 to get all trades
     }
 }
 

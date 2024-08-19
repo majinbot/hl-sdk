@@ -77,6 +77,15 @@ export class GeneralInfoAPI extends BaseInfoAPI {
         return raw_response ? response : this.convertSymbolsInObject(response);
     }
 
+    async getTradeInfo(user: string, orderId: number): Promise<any> {
+        const response = await this.httpApi.makeRequest({
+            type: INFO_TYPES.TRADE_INFO,
+            user,
+            orderId,
+        });
+        return this.convertSymbolsInObject(response);
+    }
+
     async getUserRateLimit(user: string, raw_response: boolean = false): Promise<UserRateLimit> {
         await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({ type: INFO_TYPES.USER_RATE_LIMIT, user }, 20);

@@ -132,7 +132,7 @@ export class HyperliquidAPI {
 
         this.exchange = this.createAuthenticatedProxy(ExchangeAPI);
         this.custom = this.createAuthenticatedProxy(CustomOperations);
-        this.leaderboard = new LeaderboardAPI(this.httpApi);
+        this.leaderboard = new LeaderboardAPI(this.httpApi, this.info.generalAPI, this.info.perpetuals, this.info.spot);
 
         if (privateKey) {
             this.initializeWithPrivateKey(privateKey, baseURL);

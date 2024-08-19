@@ -506,3 +506,13 @@ export interface TraderPosition {
     unrealizedPnl: number;
     liquidationPrice: number;
 }
+
+export interface BestTrade extends UserFill {
+    isPerp: boolean;
+    leverage?: number;
+    liquidation?: {
+        liquidatedUser: string;
+        markPx: number;
+        method: string;
+    };
+}

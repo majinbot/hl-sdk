@@ -21,6 +21,8 @@ export const INFO_TYPES = {
     USER_FILLS: 'userFills',
     USER_FILLS_BY_TIME: 'userFillsByTime',
     USER_RATE_LIMIT: 'userRateLimit',
+    SPOT_USER_FILLS_BY_TIME: 'spotUserFillsByTime' as const,
+    TRADE_INFO: 'tradeInfo' as const,
     ORDER_STATUS: 'orderStatus',
     L2_BOOK: 'l2Book',
     CANDLE_SNAPSHOT: 'candleSnapshot',

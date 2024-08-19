@@ -1,4 +1,4 @@
-import type { SpotMeta, SpotClearinghouseState, SpotMetaAndAssetCtxs } from '../../types';
+import type { SpotMeta, SpotClearinghouseState, SpotMetaAndAssetCtxs, UserFills } from '../../types';
 import { HttpApi } from '../../utils/helpers';
 import { INFO_TYPES } from '../../constants';
 import { BaseInfoAPI } from './base.ts';

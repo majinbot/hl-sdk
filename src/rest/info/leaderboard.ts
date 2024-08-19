@@ -1,9 +1,26 @@
 import type { HttpApi } from '../../utils/helpers.ts';
-import type { LeaderboardEntry, LeaderboardFilter, LeaderboardResponse, TimeWindow, TraderPosition } from '../../types';
+import type {
+    BestTrade,
+    ClearinghouseState,
+    LeaderboardEntry,
+    LeaderboardFilter,
+    LeaderboardResponse,
+    SpotClearinghouseState,
+    TimeWindow,
+    TraderPosition,
+    UserFill,
+    UserFills,
+} from '../../types';
 import { INFO_TYPES } from '../../constants.ts';
+import type { PerpsInfoAPI } from './perps.ts';
+import type { SpotInfoAPI } from './spot.ts';
+import type { GeneralInfoAPI } from './general.ts';
 
 export class LeaderboardAPI {
     private httpApi: HttpApi;
+    private generalInfoAPI: GeneralInfoAPI;
+    private perpsInfoAPI: PerpsInfoAPI;
+    private spotInfoAPI: SpotInfoAPI;
     private cache: {
         data: LeaderboardResponse | null;
         timestamp: number;
@@ -11,8 +28,16 @@ export class LeaderboardAPI {
 
     private readonly cacheExpiryMs: number = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-    constructor(httpApi: HttpApi) {
+    constructor(
+        httpApi: HttpApi,
+        generalInfoAPI: GeneralInfoAPI,
+        perpsInfoAPI: PerpsInfoAPI,
+        spotInfoAPI: SpotInfoAPI
+    ) {
         this.httpApi = httpApi;
+        this.generalInfoAPI = generalInfoAPI;
+        this.perpsInfoAPI = perpsInfoAPI;
+        this.spotInfoAPI = spotInfoAPI;
         this.cache = {
             data: null,
             timestamp: 0,
@@ -87,7 +112,7 @@ export class LeaderboardAPI {
                     this.getStartTimeForWindow(filter.timeWindow || 'allTime'),
                     Date.now()
                 );
-                if (tradeCount <= filter.maxTrades) {
+                if (tradeCount.total <= filter.maxTrades) {
                     finalFilteredEntries.push({ ...entry, tradeCount });
                 }
             }
@@ -127,64 +152,77 @@ export class LeaderboardAPI {
         return filter.maxAccounts ? sorted.slice(0, filter.maxAccounts) : sorted;
     }
 
-    async getTraderTradeCount(trader: string, startTime: number, endTime: number): Promise<number> {
+    async getTraderTradeCount(
+        trader: string,
+        startTime: number,
+        endTime: number
+    ): Promise<{ total: number; perp: number; spot: number }> {
         try {
-            const response = await this.httpApi.makeRequest({
-                type: INFO_TYPES.USER_FILLS_BY_TIME,
-                user: trader,
-                startTime,
-                endTime,
-            });
-            return response.length;
+            const fills: UserFills = await this.generalInfoAPI.getUserFillsByTime(trader, startTime, endTime);
+            const { perpFills, spotFills } = this.categorizeFills(fills);
+
+            return {
+                total: fills.length,
+                perp: perpFills.length,
+                spot: spotFills.length,
+            };
         } catch (error) {
             console.error(`Failed to fetch trade count for trader ${trader}:`, error);
-            console.error('Error details:', JSON.stringify(error, null, 2));
-            // Return a default value instead of null
-            return 0;
+            return { total: 0, perp: 0, spot: 0 };
         }
     }
 
+    private categorizeFills(fills: UserFills): { perpFills: UserFill[]; spotFills: UserFill[] } {
+        const perpFills: UserFill[] = [];
+        const spotFills: UserFill[] = [];
+
+        fills.forEach(fill => {
+            if (this.isPerpFill(fill)) {
+                perpFills.push(fill);
+            } else {
+                spotFills.push(fill);
+            }
+        });
+
+        return { perpFills, spotFills };
+    }
+
     async getTraderOpenPositions(trader: string): Promise<{ perp: TraderPosition[]; spot: TraderPosition[] }> {
-        const perpPositions: TraderPosition[] = [];
-        const spotPositions: TraderPosition[] = [];
-
         try {
-            const perpResponse = await this.httpApi.makeRequest({
-                type: INFO_TYPES.PERPS_CLEARINGHOUSE_STATE,
-                user: trader,
-            });
+            const [perpPositions, spotPositions] = await Promise.all([
+                this.getPerpPositions(trader),
+                this.getSpotPositions(trader),
+            ]);
 
-            perpPositions.push(
-                ...perpResponse.assetPositions.map((position: any) => ({
-                    asset: position.position.coin,
-                    size: parseFloat(position.position.szi),
-                    entryPrice: parseFloat(position.position.entryPx),
-                    leverage: parseFloat(position.position.leverage.value),
-                    unrealizedPnl: parseFloat(position.position.unrealizedPnl),
-                    liquidationPrice: parseFloat(position.position.liquidationPx),
-                }))
-            );
-
-            const spotResponse = await this.httpApi.makeRequest({
-                type: INFO_TYPES.SPOT_CLEARINGHOUSE_STATE,
-                user: trader,
-            });
-
-            spotPositions.push(
-                ...spotResponse.balances.map((balance: any) => ({
-                    asset: balance.coin,
-                    size: parseFloat(balance.total),
-                    entryPrice: null,
-                    leverage: 1,
-                    unrealizedPnl: null,
-                    liquidationPrice: null,
-                }))
-            );
+            return { perp: perpPositions, spot: spotPositions };
         } catch (error) {
             console.error(`Failed to fetch open positions for trader ${trader}:`, error);
+            return { perp: [], spot: [] };
         }
+    }
 
-        return { perp: perpPositions, spot: spotPositions };
+    private async getPerpPositions(trader: string): Promise<TraderPosition[]> {
+        const perpResponse: ClearinghouseState = await this.perpsInfoAPI.getClearinghouseState(trader);
+        return perpResponse.assetPositions.map((position: any) => ({
+            asset: position.position.coin,
+            size: parseFloat(position.position.szi),
+            entryPrice: parseFloat(position.position.entryPx),
+            leverage: parseFloat(position.position.leverage.value),
+            unrealizedPnl: parseFloat(position.position.unrealizedPnl),
+            liquidationPrice: parseFloat(position.position.liquidationPx),
+        }));
+    }
+
+    private async getSpotPositions(trader: string): Promise<TraderPosition[]> {
+        const spotResponse: SpotClearinghouseState = await this.spotInfoAPI.getSpotClearinghouseState(trader);
+        return spotResponse.balances.map((balance: any) => ({
+            asset: balance.coin,
+            size: parseFloat(balance.total),
+            entryPrice: 0,
+            leverage: 1,
+            unrealizedPnl: 0,
+            liquidationPrice: 0,
+        }));
     }
 
     async getExtendedTraderInfo(trader: LeaderboardEntry, timeWindow: TimeWindow): Promise<any> {
@@ -204,7 +242,7 @@ export class LeaderboardAPI {
         };
     }
 
-    private getStartTimeForWindow(timeWindow: TimeWindow): number {
+    public getStartTimeForWindow(timeWindow: TimeWindow): number {
         const now = Date.now();
         switch (timeWindow) {
             case 'day':
@@ -218,84 +256,53 @@ export class LeaderboardAPI {
         }
     }
 
-    async analyzeTradersData(
-        filter: LeaderboardFilter,
-        sortBy: 'pnl' | 'roi' | 'vlm' | 'accountValue' = 'pnl'
-    ): Promise<any> {
-        const topTraders = await this.getFilteredAndSortedLeaderboard(filter, sortBy);
-        const top3Traders = topTraders.slice(0, 3);
+    async getBestTrade(trader: string, timeWindow: TimeWindow): Promise<BestTrade | null> {
+        const endTime = Date.now();
+        const startTime = this.getStartTimeForWindow(timeWindow);
+        let fills;
+        try {
+            fills = await this.generalInfoAPI.getUserFillsByTime(trader, startTime, endTime);
+        } catch (error) {
+            console.error(`Failed to fetch user fills for trader ${trader}:`, error);
+            return null;
+        }
 
-        console.log('TOP 3 TRADERS:', top3Traders);
+        const bestTrade = fills.reduce<UserFill | null>((best, current) => {
+            if (!best || parseFloat(current.closedPnl) > parseFloat(best.closedPnl)) {
+                return current;
+            }
+            return best;
+        }, null);
 
-        const extendedTraderInfo = await Promise.all(
-            top3Traders.map(trader => this.getExtendedTraderInfo(trader, filter.timeWindow || 'allTime'))
-        );
+        if (!bestTrade) return null;
+
+        const isPerp = this.isPerpFill(bestTrade);
+
+        let leverage = 1; // Default leverage
+        if (isPerp) {
+            leverage = this.getLeverageFromFill(bestTrade);
+        }
 
         return {
-            topTraders: extendedTraderInfo,
-            analysis: {
-                sharedAssets: this.findSharedAssets(extendedTraderInfo.map(info => info.openPositions)),
-                overallSentiment: this.calculateOverallSentiment(extendedTraderInfo.map(info => info.openPositions)),
-                riskAnalysis: this.analyzeRisk(extendedTraderInfo.map(info => info.openPositions)),
-                tradingActivity: this.analyzeTradingActivity(extendedTraderInfo),
-            },
-        };
+            ...bestTrade,
+            isPerp,
+            leverage,
+        } as BestTrade;
     }
 
-    private findSharedAssets(positions: Array<{ perp: TraderPosition[]; spot: TraderPosition[] }>): string[] {
-        const assetCounts: Record<string, number> = {};
-        positions.forEach(traderPositions => {
-            [...traderPositions.perp, ...traderPositions.spot].forEach(position => {
-                assetCounts[position.asset] = (assetCounts[position.asset] || 0) + 1;
-            });
-        });
-        return Object.entries(assetCounts)
-            .filter(([_, count]) => count > 1)
-            .map(([asset, _]) => asset);
+    private isPerpFill(fill: UserFill): boolean {
+        return fill.coin.endsWith('-PERP');
     }
 
-    private calculateOverallSentiment(
-        positions: Array<{ perp: TraderPosition[]; spot: TraderPosition[] }>
-    ): 'bullish' | 'bearish' | 'neutral' {
-        let totalSentiment = 0;
-        let positionCount = 0;
-
-        positions.forEach(traderPositions => {
-            traderPositions.perp.forEach(position => {
-                totalSentiment += Math.sign(position.size);
-                positionCount++;
-            });
-        });
-
-        const averageSentiment = totalSentiment / positionCount;
-        if (averageSentiment > 0.2) return 'bullish';
-        if (averageSentiment < -0.2) return 'bearish';
-        return 'neutral';
-    }
-
-    private analyzeRisk(positions: Array<{ perp: TraderPosition[]; spot: TraderPosition[] }>): string {
-        let highLeverageCount = 0;
-        let totalPositions = 0;
-
-        positions.forEach(traderPositions => {
-            traderPositions.perp.forEach(position => {
-                if (position.leverage > 10) highLeverageCount++;
-                totalPositions++;
-            });
-        });
-
-        const highLeverageRatio = highLeverageCount / totalPositions;
-        if (highLeverageRatio > 0.5) return 'High risk: Many positions use high leverage';
-        if (highLeverageRatio > 0.2) return 'Moderate risk: Some positions use high leverage';
-        return 'Low risk: Most positions use conservative leverage';
-    }
-
-    private analyzeTradingActivity(traders: any[]): string {
-        const avgTradeCount = traders.reduce((sum, trader) => sum + trader.tradeCount, 0) / traders.length;
-        const avgOpenPositions = traders.reduce((sum, trader) => sum + trader.totalOpenPositions, 0) / traders.length;
-
-        return `Average trade count: ${avgTradeCount.toFixed(2)}. Average open positions: ${avgOpenPositions.toFixed(
-            2
-        )}.`;
+    private getLeverageFromFill(fill: UserFill): number {
+        // Attempt to calculate leverage from the fill information
+        if (fill.crossed && fill.startPosition && fill.sz) {
+            const absStartPosition = Math.abs(parseFloat(fill.startPosition));
+            const absSz = Math.abs(parseFloat(fill.sz));
+            if (absStartPosition > 0) {
+                return Math.round((absStartPosition + absSz) / absStartPosition);
+            }
+        }
+        return 1; // Default leverage if we can't calculate it
     }
 }
