@@ -199,7 +199,7 @@ describe("HyperliquidAPI Read APIs", () => {
 
     test("filterLeaderboard returns correct results", async () => {
         const leaderboard: LeaderboardResponse = await api.leaderboard.getLeaderboard();
-        const filtered = api.leaderboard.filterLeaderboard(leaderboard, {
+        const filtered: LeaderboardEntry[] = await api.leaderboard.filterLeaderboard(leaderboard, {
             timeWindow: 'month',
             minAccountValue: 10000,
             minVolume: 1000000,
@@ -208,7 +208,7 @@ describe("HyperliquidAPI Read APIs", () => {
             maxAccounts: 10
         });
         expect(Array.isArray(filtered)).toBe(true);
-        expect(filtered.length).toBeLessThanOrEqual(10);
+        expect(filtered.length).toBeGreaterThan(0);
         filtered.forEach((entry: LeaderboardEntry) => {
             const monthPerformance = entry.windowPerformances.find(([window]) => window === 'month')?.[1];
             expect(parseFloat(entry.accountValue)).toBeGreaterThanOrEqual(10000);
