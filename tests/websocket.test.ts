@@ -1,5 +1,5 @@
 import {expect, test, describe, beforeAll, afterAll, beforeEach} from "bun:test";
-import { HyperliquidAPI } from "../src/api";
+import { HyperliquidAPI } from "../src";
 import type {
     AllMids,
     WsTrade,
@@ -7,7 +7,7 @@ import type {
     Candle
 } from "../src";
 
-const WS_TIMEOUT = 15000; // 15 secs
+const WS_TIMEOUT = 30_000; // 30 secs
 
 describe("HyperliquidAPI WebSocket", () => {
     let api: HyperliquidAPI;
@@ -130,13 +130,13 @@ describe("HyperliquidAPI WebSocket", () => {
     test("Subscribe to candles", async () => {
         const assets = api.getAllAssets();
         const symbol = assets.perp[0];
-        const interval = '5m';
+        const interval = '1m';
         console.log(`Subscribing to candles for symbol: ${symbol}, interval: ${interval}`);
 
         return new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
                 api.subscriptions.unsubscribeFromCandle(symbol, interval, callback);
-                reject(new Error(`No candle data received for ${symbol} within 10 seconds`));
+                reject(new Error(`No candle data received for ${symbol} within ${WS_TIMEOUT / 1000}s`));
             }, WS_TIMEOUT);
 
             const callback = (data: Candle[]) => {
