@@ -1,19 +1,19 @@
 import { Wallet } from 'ethers';
+import { BASE_URLS, ENDPOINTS } from './constants';
+import { IS_MAINNET } from './config';
 import { InfoAPI } from './rest/info';
 import { ExchangeAPI } from './rest/exchange';
 import { WebSocketClient } from './websocket/connection';
 import { WebSocketSubscriptions } from './websocket/subscriptions';
 import { RateLimiter } from './utils/rateLimiter';
 import { HttpApi } from './utils/helpers';
-import { BASE_URLS, ENDPOINTS } from './constants';
-import { CustomOperations } from './rest/custom';
-import { IS_MAINNET } from './config';
 import { SymbolConverter } from './utils/symbolConverter';
 import { AuthenticationError } from './utils/errors';
 import { LeaderboardAPI } from './rest/info/leaderboard.ts';
 import { GeneralInfoAPI } from './rest/info/general.ts';
 import { SpotInfoAPI } from './rest/info/spot.ts';
 import { PerpsInfoAPI } from './rest/info/perps.ts';
+import { CustomOperations } from './rest/custom';
 
 export class HyperliquidAPI {
     public readonly info: InfoAPI;

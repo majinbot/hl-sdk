@@ -16,6 +16,8 @@ import type { PerpsInfoAPI } from './perps.ts';
 import type { SpotInfoAPI } from './spot.ts';
 import type { GeneralInfoAPI } from './general.ts';
 
+export const LEADERBOARD_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
 export class LeaderboardAPI {
     private httpApi: HttpApi;
     private generalInfoAPI: GeneralInfoAPI;
@@ -26,7 +28,7 @@ export class LeaderboardAPI {
         timestamp: number;
     };
 
-    private readonly cacheExpiryMs: number = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    private readonly cacheExpiryMs = LEADERBOARD_EXPIRY
 
     constructor(
         httpApi: HttpApi,
@@ -45,15 +47,20 @@ export class LeaderboardAPI {
     }
 
     private isCacheValid(): boolean {
-        return this.cache.data !== null && Date.now() - this.cache.timestamp < this.cacheExpiryMs;
+        const isValid = this.cache.data !== null && Date.now() - this.cache.timestamp < this.cacheExpiryMs;
+        console.log(`Cache valid: ${isValid}, Age: ${(Date.now() - this.cache.timestamp) / 1000} seconds`);
+        return isValid;
     }
 
     async getLeaderboard(): Promise<LeaderboardResponse> {
+        console.log('getLeaderboard called');
         if (this.isCacheValid()) {
+            console.log('Returning cached leaderboard data');
             return this.cache.data!;
         }
 
         try {
+            console.log('Fetching fresh leaderboard data');
             const leaderboard = await this.httpApi.makeRequest({
                 type: INFO_TYPES.LEADERBOARD,
             });
@@ -62,6 +69,7 @@ export class LeaderboardAPI {
                 data: leaderboard,
                 timestamp: Date.now(),
             };
+            console.log('Leaderboard data cached');
 
             return leaderboard;
         } catch (error) {

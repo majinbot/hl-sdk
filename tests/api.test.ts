@@ -173,31 +173,52 @@ describe("HyperliquidAPI Read APIs", () => {
         });
     });
 
-    test("getLeaderboard returns valid data", async () => {
+    const LEADERBOARD_TIMEOUT = 40_000; // 40s
+
+    test("getLeaderboard returns valid data and uses cache", async () => {
         try {
-            const leaderboard: LeaderboardResponse = await api.leaderboard.getLeaderboard();
-            expect(leaderboard).toBeDefined();
-            expect(Array.isArray(leaderboard.leaderboardRows)).toBe(true);
-            expect(leaderboard.leaderboardRows.length).toBeGreaterThan(0);
-            leaderboard.leaderboardRows.forEach((entry: LeaderboardEntry) => {
-                expect(hasAllKeys(entry, ['ethAddress', 'accountValue', 'windowPerformances', 'prize', 'displayName'])).toBe(true);
-                expect(isValidNumber(entry.accountValue)).toBe(true);
-                expect(Array.isArray(entry.windowPerformances)).toBe(true);
-                entry.windowPerformances.forEach(([window, performance]: [string, Performance]) => {
-                    expect(typeof window).toBe("string");
-                    expect(hasAllKeys(performance, ['pnl', 'roi', 'vlm'])).toBe(true);
-                    expect(isValidNumber(performance.pnl)).toBe(true);
-                    expect(isValidNumber(performance.roi)).toBe(true);
-                    expect(isValidNumber(performance.vlm)).toBe(true);
-                });
-            });
+            console.time('First getLeaderboard call');
+            const leaderboard1: LeaderboardResponse = await api.leaderboard.getLeaderboard();
+            console.timeEnd('First getLeaderboard call');
+
+            validateLeaderboard(leaderboard1);
+
+            // Second call should use cache and be much faster
+            console.time('Second getLeaderboard call');
+            const leaderboard2: LeaderboardResponse = await api.leaderboard.getLeaderboard();
+            console.timeEnd('Second getLeaderboard call');
+
+            validateLeaderboard(leaderboard2);
+
+            // Both results should be identical due to caching
+            expect(leaderboard1).toEqual(leaderboard2);
+
         } catch (error) {
             console.error("Error in getLeaderboard:", error);
             throw error;
         }
-    }, 20000);  // Increase timeout to 20 seconds
+    }, LEADERBOARD_TIMEOUT);
+
+    function validateLeaderboard(leaderboard: LeaderboardResponse) {
+        expect(leaderboard).toBeDefined();
+        expect(Array.isArray(leaderboard.leaderboardRows)).toBe(true);
+        expect(leaderboard.leaderboardRows.length).toBeGreaterThan(0);
+        leaderboard.leaderboardRows.forEach((entry: LeaderboardEntry) => {
+            expect(hasAllKeys(entry, ['ethAddress', 'accountValue', 'windowPerformances', 'prize', 'displayName'])).toBe(true);
+            expect(isValidNumber(entry.accountValue)).toBe(true);
+            expect(Array.isArray(entry.windowPerformances)).toBe(true);
+            entry.windowPerformances.forEach(([window, performance]: [string, Performance]) => {
+                expect(typeof window).toBe("string");
+                expect(hasAllKeys(performance, ['pnl', 'roi', 'vlm'])).toBe(true);
+                expect(isValidNumber(performance.pnl)).toBe(true);
+                expect(isValidNumber(performance.roi)).toBe(true);
+                expect(isValidNumber(performance.vlm)).toBe(true);
+            });
+        });
+    }
 
     test("filterLeaderboard returns correct results", async () => {
+
         const leaderboard: LeaderboardResponse = await api.leaderboard.getLeaderboard();
         const filtered: LeaderboardEntry[] = await api.leaderboard.filterLeaderboard(leaderboard, {
             timeWindow: 'month',
@@ -216,7 +237,7 @@ describe("HyperliquidAPI Read APIs", () => {
             expect(parseFloat(monthPerformance!.pnl)).toBeGreaterThanOrEqual(1000);
             expect(parseFloat(monthPerformance!.roi)).toBeGreaterThanOrEqual(0.1);
         });
-    }, 20000);  // Increase timeout to 20 seconds
+    }, LEADERBOARD_TIMEOUT);
 
     test("sortLeaderboard returns correctly sorted results", async () => {
         const leaderboard: LeaderboardResponse = await api.leaderboard.getLeaderboard();

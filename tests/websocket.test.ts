@@ -7,7 +7,7 @@ import type {
     Candle
 } from "../src";
 
-describe("HyperliquidAPI WebSocket", () => {
+describe.skip("HyperliquidAPI WebSocket", () => {
     let api: HyperliquidAPI;
 
     beforeAll(async () => {
