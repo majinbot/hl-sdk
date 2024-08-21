@@ -28,14 +28,11 @@ export class SymbolConverter {
     }
 
     convertSymbol(symbol: string, mode: string = '', symbolMode: string = ''): string {
-        console.log(`Converting symbol: ${symbol}, mode: ${mode}, symbolMode: ${symbolMode}`);
-
         if (mode === 'reverse') {
             // Convert from internal to exchange format
             const exchangeSymbol = Array.from(this.exchangeToInternalNameMap.entries()).find(
                 ([, value]) => value === symbol
             )?.[0];
-            console.log(`Reverse conversion result: ${exchangeSymbol || symbol}`);
             return exchangeSymbol || symbol;
         } else {
             // Convert from exchange to internal format
@@ -46,7 +43,6 @@ export class SymbolConverter {
                 rSymbol = symbol;
             }
 
-            console.log(`Forward conversion result: ${rSymbol}`);
             return rSymbol;
         }
     }

@@ -44,9 +44,9 @@ export abstract class BaseInfoAPI {
 
             this.symbolConverter.updateMaps(exchangeToInternalNameMap, assetToIndexMap);
 
-            console.log('Asset maps refreshed successfully');
+            console.log('BaseInfoAPI: Asset maps refreshed successfully');
         } catch (error) {
-            console.error('Failed to refresh asset maps:', error);
+            console.error('BaseInfoAPI: Failed to refresh asset maps:', error);
         }
     }
 

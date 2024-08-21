@@ -33,6 +33,15 @@ describe("HyperliquidAPI WebSocket", () => {
     test("API has loaded assets", () => {
         const assets = api.getAllAssets();
         console.log("Loaded assets", `perps (#${assets.perp.length})`, `spot (#${assets.spot.length})`);
+
+        // Debug logging
+        console.log("Raw SymbolConverter maps:");
+        console.log(JSON.stringify(api['symbolConverter']['exchangeToInternalNameMap'], null, 2));
+        console.log(JSON.stringify(api['symbolConverter']['assetToIndexMap'], null, 2));
+
+        console.log("BaseInfoAPI internal state:");
+        console.log(JSON.stringify(api['info'], null, 2));
+
         expect(assets.perp.length).toBeGreaterThan(0);
         expect(assets.spot.length).toBeGreaterThan(0);
     });

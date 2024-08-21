@@ -54,7 +54,7 @@ export class HyperliquidAPI {
             this.initializeWithPrivateKey(privateKey, baseURL);
         }
 
-        this.initialize().then(() => console.log('HL API initialized'));
+        this.initialize().then(() => console.log('HyperliquidAPI: initialized'));
     }
 
     private initializeWithPrivateKey(privateKey: string, baseURL: string): void {
@@ -66,13 +66,14 @@ export class HyperliquidAPI {
             this.custom = new CustomOperations(this.exchange, this.info, formattedPrivateKey);
             this.isAuthenticated = true;
         } catch (error) {
-            console.warn('Invalid private key provided. Some functionalities will be limited.');
+            console.warn('HyperliquidAPI: Invalid private key provided. Some functionalities will be limited.');
             this.isAuthenticated = false;
         }
     }
 
     private async initialize(): Promise<void> {
         await this.info.refreshAssetMaps();
+        console.log('HyperliquidAPI: Asset maps refreshed');
         this.startPeriodicRefresh();
     }
 
@@ -103,7 +104,7 @@ export class HyperliquidAPI {
     public async connect(): Promise<void> {
         await this.ws.connect();
         if (!this.isAuthenticated) {
-            console.warn('Not authenticated. Some WebSocket functionalities may be limited.');
+            console.warn('HyperliquidAPI: Not authenticated. WebSocket functionalities will be limited.');
         }
     }
 
@@ -117,14 +118,14 @@ export class HyperliquidAPI {
 
     public getExchange(): ExchangeAPI {
         if (!this.exchange) {
-            throw new AuthenticationError('ExchangeAPI is not available. Authentication required.');
+            throw new AuthenticationError('HyperliquidAPI: Exchange api is not available. Authentication required.');
         }
         return this.exchange;
     }
 
     public getCustom(): CustomOperations {
         if (!this.custom) {
-            throw new AuthenticationError('CustomOperations is not available. Authentication required.');
+            throw new AuthenticationError('HyperliquidAPI: Custom ops are not available. Authentication required.');
         }
         return this.custom;
     }
