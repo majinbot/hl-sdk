@@ -28,7 +28,7 @@ export class LeaderboardAPI {
         timestamp: number;
     };
 
-    private readonly cacheExpiryMs = LEADERBOARD_EXPIRY
+    private readonly cacheExpiryMs = LEADERBOARD_EXPIRY;
 
     constructor(
         httpApi: HttpApi,
