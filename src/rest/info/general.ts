@@ -11,18 +11,14 @@ import type {
 import { HttpApi } from '../../utils/helpers';
 import { INFO_TYPES } from '../../constants';
 import { BaseInfoAPI } from './base.ts';
+import type { SymbolConverter } from '../../utils/symbolConverter.ts';
 
 export class GeneralInfoAPI extends BaseInfoAPI {
-    constructor(
-        httpApi: HttpApi,
-        exchangeToInternalNameMap: Map<string, string>,
-        initializationPromise: Promise<void>
-    ) {
-        super(httpApi, exchangeToInternalNameMap, initializationPromise);
+    constructor(httpApi: HttpApi, symbolConverter: SymbolConverter) {
+        super(httpApi, symbolConverter);
     }
 
     async getAllMids(raw_response: boolean = false): Promise<AllMids> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.ALL_MIDS,
         });
@@ -30,7 +26,6 @@ export class GeneralInfoAPI extends BaseInfoAPI {
     }
 
     async getUserOpenOrders(user: string, raw_response: boolean = false): Promise<UserOpenOrders> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.OPEN_ORDERS,
             user,
@@ -39,13 +34,11 @@ export class GeneralInfoAPI extends BaseInfoAPI {
     }
 
     async getFrontendOpenOrders(user: string, raw_response: boolean = false): Promise<FrontendOpenOrders> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({ type: INFO_TYPES.FRONTEND_OPEN_ORDERS, user }, 20);
         return raw_response ? response : this.convertSymbolsInObject(response);
     }
 
     async getUserFills(user: string, raw_response: boolean = false): Promise<UserFills> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({ type: INFO_TYPES.USER_FILLS, user }, 20);
         return raw_response ? response : this.convertSymbolsInObject(response);
     }
@@ -56,8 +49,6 @@ export class GeneralInfoAPI extends BaseInfoAPI {
         endTime?: number,
         raw_response: boolean = false
     ): Promise<UserFills> {
-        await this.ensureInitialized(raw_response);
-
         const params: {
             user: string;
             startTime: number;
@@ -87,13 +78,11 @@ export class GeneralInfoAPI extends BaseInfoAPI {
     }
 
     async getUserRateLimit(user: string, raw_response: boolean = false): Promise<UserRateLimit> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({ type: INFO_TYPES.USER_RATE_LIMIT, user }, 20);
         return raw_response ? response : this.convertSymbolsInObject(response);
     }
 
     async getOrderStatus(user: string, oid: number | string, raw_response: boolean = false): Promise<OrderStatus> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.ORDER_STATUS,
             user,
@@ -103,7 +92,6 @@ export class GeneralInfoAPI extends BaseInfoAPI {
     }
 
     async getL2Book(coin: string, raw_response: boolean = false): Promise<L2Book> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.L2_BOOK,
             coin: this.convertSymbol(coin, 'reverse'),
@@ -118,7 +106,6 @@ export class GeneralInfoAPI extends BaseInfoAPI {
         endTime: number,
         raw_response: boolean = false
     ): Promise<CandleSnapshot> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.CANDLE_SNAPSHOT,
             req: {

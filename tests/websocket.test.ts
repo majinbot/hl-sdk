@@ -1,13 +1,11 @@
 import {expect, test, describe, beforeAll, afterAll, beforeEach} from "bun:test";
-import { HyperliquidAPI } from "../src";
+import {HyperliquidAPI, WS_TIMEOUT} from "../src";
 import type {
     AllMids,
     WsTrade,
     WsBook,
     Candle
 } from "../src";
-
-const WS_TIMEOUT = 30_000; // 30 secs
 
 describe("HyperliquidAPI WebSocket", () => {
     let api: HyperliquidAPI;

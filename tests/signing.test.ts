@@ -5,7 +5,7 @@ import {
     orderTypeToWire,
     floatToWire,
     orderRequestToOrderWire,
-} from "../src/utils/signing";
+} from "../src";
 
 describe("Signing Utilities", () => {
     test("orderTypeToWire converts limit order correctly", () => {

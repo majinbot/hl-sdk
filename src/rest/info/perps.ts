@@ -9,24 +9,19 @@ import type {
 import { HttpApi } from '../../utils/helpers';
 import { INFO_TYPES } from '../../constants';
 import { BaseInfoAPI } from './base.ts';
+import type { SymbolConverter } from '../../utils/symbolConverter.ts';
 
 export class PerpsInfoAPI extends BaseInfoAPI {
-    constructor(
-        httpApi: HttpApi,
-        exchangeToInternalNameMap: Map<string, string>,
-        initializationPromise: Promise<void>
-    ) {
-        super(httpApi, exchangeToInternalNameMap, initializationPromise);
+    constructor(httpApi: HttpApi, symbolConverter: SymbolConverter) {
+        super(httpApi, symbolConverter);
     }
 
     async getMeta(raw_response: boolean = false): Promise<Meta> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({ type: INFO_TYPES.META });
         return raw_response ? response : this.convertSymbolsInObject(response, ['name', 'coin', 'symbol'], 'PERP');
     }
 
     async getMetaAndAssetCtxs(raw_response: boolean = false): Promise<MetaAndAssetCtxs> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.PERPS_META_AND_ASSET_CTXS,
         });
@@ -34,7 +29,6 @@ export class PerpsInfoAPI extends BaseInfoAPI {
     }
 
     async getClearinghouseState(user: string, raw_response: boolean = false): Promise<ClearinghouseState> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.PERPS_CLEARINGHOUSE_STATE,
             user,
@@ -48,7 +42,6 @@ export class PerpsInfoAPI extends BaseInfoAPI {
         endTime?: number,
         raw_response: boolean = false
     ): Promise<UserFunding> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest(
             {
                 type: INFO_TYPES.USER_FUNDING,
@@ -67,7 +60,6 @@ export class PerpsInfoAPI extends BaseInfoAPI {
         endTime?: number,
         raw_response: boolean = false
     ): Promise<UserNonFundingLedgerUpdates> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest(
             {
                 type: INFO_TYPES.USER_NON_FUNDING_LEDGER_UPDATES,
@@ -86,7 +78,6 @@ export class PerpsInfoAPI extends BaseInfoAPI {
         endTime?: number,
         raw_response: boolean = false
     ): Promise<FundingHistory> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest(
             {
                 type: INFO_TYPES.FUNDING_HISTORY,

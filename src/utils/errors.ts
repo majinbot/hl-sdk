@@ -9,6 +9,13 @@ export class HyperliquidAPIError extends Error {
     }
 }
 
+export class AuthenticationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'AuthenticationError';
+    }
+}
+
 /**
  * Handles API errors and throws a HyperliquidAPIError with appropriate details.
  * @param error - The error object received from the API call.

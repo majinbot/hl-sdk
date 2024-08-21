@@ -2,18 +2,14 @@ import type { SpotMeta, SpotClearinghouseState, SpotMetaAndAssetCtxs, UserFills 
 import { HttpApi } from '../../utils/helpers';
 import { INFO_TYPES } from '../../constants';
 import { BaseInfoAPI } from './base.ts';
+import type { SymbolConverter } from '../../utils/symbolConverter.ts';
 
 export class SpotInfoAPI extends BaseInfoAPI {
-    constructor(
-        httpApi: HttpApi,
-        exchangeToInternalNameMap: Map<string, string>,
-        initializationPromise: Promise<void>
-    ) {
-        super(httpApi, exchangeToInternalNameMap, initializationPromise);
+    constructor(httpApi: HttpApi, symbolConverter: SymbolConverter) {
+        super(httpApi, symbolConverter);
     }
 
     async getSpotMeta(raw_response: boolean = false): Promise<SpotMeta> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.SPOT_META,
         });
@@ -21,7 +17,6 @@ export class SpotInfoAPI extends BaseInfoAPI {
     }
 
     async getSpotClearinghouseState(user: string, raw_response: boolean = false): Promise<SpotClearinghouseState> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.SPOT_CLEARINGHOUSE_STATE,
             user,
@@ -30,7 +25,6 @@ export class SpotInfoAPI extends BaseInfoAPI {
     }
 
     async getSpotMetaAndAssetCtxs(raw_response: boolean = false): Promise<SpotMetaAndAssetCtxs> {
-        await this.ensureInitialized(raw_response);
         const response = await this.httpApi.makeRequest({
             type: INFO_TYPES.SPOT_META_AND_ASSET_CTXS,
         });

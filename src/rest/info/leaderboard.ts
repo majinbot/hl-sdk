@@ -31,8 +31,8 @@ export class LeaderboardAPI {
     constructor(
         httpApi: HttpApi,
         generalInfoAPI: GeneralInfoAPI,
-        perpsInfoAPI: PerpsInfoAPI,
-        spotInfoAPI: SpotInfoAPI
+        spotInfoAPI: SpotInfoAPI,
+        perpsInfoAPI: PerpsInfoAPI
     ) {
         this.httpApi = httpApi;
         this.generalInfoAPI = generalInfoAPI;

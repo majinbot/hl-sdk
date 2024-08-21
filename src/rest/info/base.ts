@@ -1,79 +1,83 @@
 import { HttpApi } from '../../utils/helpers';
+import { SymbolConverter } from '../../utils/symbolConverter';
+import { INFO_TYPES } from '../../constants';
 
 export abstract class BaseInfoAPI {
-    protected httpApi: HttpApi;
-    protected exchangeToInternalNameMap: Map<string, string>;
-    protected initializationPromise: Promise<void>;
+    protected constructor(protected readonly httpApi: HttpApi, protected readonly symbolConverter: SymbolConverter) {}
 
-    protected constructor(
-        httpApi: HttpApi,
-        exchangeToInternalNameMap: Map<string, string>,
-        initializationPromise: Promise<void>
-    ) {
-        this.httpApi = httpApi;
-        this.exchangeToInternalNameMap = exchangeToInternalNameMap;
-        this.initializationPromise = initializationPromise;
+    public convertSymbol(symbol: string, mode: string = '', symbolMode: string = ''): string {
+        return this.symbolConverter.convertSymbol(symbol, mode, symbolMode);
     }
 
-    protected async ensureInitialized(raw_response: boolean): Promise<void> {
-        if (!raw_response) {
-            await this.initializationPromise;
-        }
-    }
-
-    protected convertSymbol(symbol: string, mode: string = '', symbolMode: string = ''): string {
-        let rSymbol;
-        if (mode === 'reverse') {
-            rSymbol =
-                Array.from(this.exchangeToInternalNameMap.entries()).find(([, value]) => value === symbol)?.[0] ||
-                symbol;
-        } else {
-            rSymbol = this.exchangeToInternalNameMap.get(symbol) || symbol;
-        }
-
-        if (symbolMode === 'SPOT' && !rSymbol.endsWith('-SPOT')) {
-            rSymbol = `${symbol}-SPOT`;
-        } else if (symbolMode === 'PERP' && !rSymbol.endsWith('-PERP')) {
-            rSymbol = `${symbol}-PERP`;
-        }
-
-        return rSymbol;
-    }
-
-    protected convertSymbolsInObject(
+    public convertSymbolsInObject(
         obj: any,
         symbolsFields: string[] = ['coin', 'symbol'],
         symbolMode: string = ''
     ): any {
-        if (typeof obj !== 'object' || obj === null) {
-            return this.convertToNumber(obj);
-        }
-
-        if (Array.isArray(obj)) {
-            return obj.map(item => this.convertSymbolsInObject(item, symbolsFields, symbolMode));
-        }
-
-        const convertedObj: any = {};
-        for (const [key, value] of Object.entries(obj)) {
-            if (symbolsFields.includes(key)) {
-                convertedObj[key] = this.convertSymbol(value as string, '', symbolMode);
-            } else if (key === 'side') {
-                convertedObj[key] = value === 'A' ? 'sell' : value === 'B' ? 'buy' : value;
-            } else {
-                convertedObj[key] = this.convertSymbolsInObject(value, symbolsFields, symbolMode);
-            }
-        }
-        return convertedObj;
+        return this.symbolConverter.convertSymbolsInObject(obj, symbolsFields, symbolMode);
     }
 
-    protected convertToNumber(value: any): any {
-        if (typeof value === 'string') {
-            if (/^-?\d+$/.test(value)) {
-                return parseInt(value, 10);
-            } else if (/^-?\d*\.\d+$/.test(value)) {
-                return parseFloat(value);
-            }
+    getAssetIndex(assetName: string): number | undefined {
+        return this.symbolConverter.getAssetIndex(assetName);
+    }
+
+    getInternalName(exchangeName: string): string | undefined {
+        return this.symbolConverter.getInternalName(exchangeName);
+    }
+
+    getAllAssets(): { perp: string[]; spot: string[] } {
+        return this.symbolConverter.getAllAssets();
+    }
+
+    async refreshAssetMaps(): Promise<void> {
+        try {
+            const [perpMetaResponse, spotMetaResponse] = await Promise.all([
+                this.httpApi.makeRequest({ type: INFO_TYPES.PERPS_META_AND_ASSET_CTXS }),
+                this.httpApi.makeRequest({ type: INFO_TYPES.SPOT_META_AND_ASSET_CTXS }),
+            ]);
+
+            const exchangeToInternalNameMap = new Map<string, string>();
+            const assetToIndexMap = new Map<string, number>();
+
+            this.processPerpetualAssets(perpMetaResponse, exchangeToInternalNameMap, assetToIndexMap);
+            this.processSpotAssets(spotMetaResponse, exchangeToInternalNameMap, assetToIndexMap);
+
+            this.symbolConverter.updateMaps(exchangeToInternalNameMap, assetToIndexMap);
+
+            console.log('Asset maps refreshed successfully');
+        } catch (error) {
+            console.error('Failed to refresh asset maps:', error);
         }
-        return value;
+    }
+
+    private processPerpetualAssets(
+        perpMetaResponse: any,
+        exchangeToInternalNameMap: Map<string, string>,
+        assetToIndexMap: Map<string, number>
+    ): void {
+        if (Array.isArray(perpMetaResponse) && perpMetaResponse.length > 0 && perpMetaResponse[0].universe) {
+            perpMetaResponse[0].universe.forEach((asset: { name: string }, index: number) => {
+                const internalName = `${asset.name}-PERP-${index}`;
+                const exchangeName = `${asset.name}-${index}`;
+                assetToIndexMap.set(internalName, index);
+                exchangeToInternalNameMap.set(exchangeName, internalName);
+            });
+        }
+    }
+
+    private processSpotAssets(
+        spotMetaResponse: any,
+        exchangeToInternalNameMap: Map<string, string>,
+        assetToIndexMap: Map<string, number>
+    ): void {
+        if (Array.isArray(spotMetaResponse) && spotMetaResponse.length > 0 && spotMetaResponse[0].universe) {
+            spotMetaResponse[0].universe.forEach((market: { name: string; index: number }) => {
+                const baseName = market.name.split('/')[0];
+                const internalName = `${baseName}-SPOT-${market.index}`;
+                const exchangeName = `${market.name}-${market.index}`;
+                assetToIndexMap.set(internalName, 10000 + market.index);
+                exchangeToInternalNameMap.set(exchangeName, internalName);
+            });
+        }
     }
 }

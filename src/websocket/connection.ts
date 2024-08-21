@@ -21,7 +21,7 @@ export class WebSocketClient extends EventEmitter {
         pingIntervalMs: number = 30000
     ) {
         super();
-        this.url = testnet ? WSS_URLS.TESTNET : WSS_URLS.PRODUCTION;
+        this.url = testnet ? WSS_URLS.TESTNET : WSS_URLS.MAINNET;
         this.maxReconnectAttempts = maxReconnectAttempts;
         this.reconnectDelay = reconnectDelay;
         this.pingIntervalMs = pingIntervalMs;

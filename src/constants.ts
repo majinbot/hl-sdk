@@ -1,10 +1,10 @@
 export const BASE_URLS = {
-    PRODUCTION: 'https://api.hyperliquid.xyz',
+    MAINNET: 'https://api.hyperliquid.xyz',
     TESTNET: 'https://api.hyperliquid-testnet.xyz',
 } as const;
 
 export const WSS_URLS = {
-    PRODUCTION: 'wss://api.hyperliquid.xyz/ws',
+    MAINNET: 'wss://api.hyperliquid.xyz/ws',
     TESTNET: 'wss://api.hyperliquid-testnet.xyz/ws',
 } as const;
 
@@ -55,6 +55,6 @@ export const EXCHANGE_TYPES = {
 } as const;
 
 export const WEBSOCKET = {
-    MAINNET_URL: WSS_URLS.PRODUCTION,
+    MAINNET_URL: WSS_URLS.MAINNET,
     TESTNET_URL: WSS_URLS.TESTNET,
 } as const;

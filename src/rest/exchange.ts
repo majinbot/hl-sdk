@@ -1,6 +1,4 @@
 import { ethers } from 'ethers';
-import { RateLimiter } from '../utils/rateLimiter';
-import { HttpApi } from '../utils/helpers';
 import {
     signL1Action,
     orderRequestToOrderWire,
@@ -11,39 +9,20 @@ import {
     type CancelOrderResponse,
 } from '../utils/signing';
 import type { CancelOrderRequest, OrderRequest } from '../types';
-import { ENDPOINTS, EXCHANGE_TYPES } from '../constants';
+import { EXCHANGE_TYPES } from '../constants';
 import { IS_MAINNET } from '../config.ts';
+import type { InfoAPI } from './info.ts';
+import type { HttpApi } from '../utils/helpers.ts';
 
 export class ExchangeAPI {
     private readonly wallet: ethers.Wallet;
-    private readonly httpApi: HttpApi;
-    private assetToIndexMap: Map<string, number>;
-    private exchangeToInternalNameMap: Map<string, string>;
-    private readonly initializationPromise: Promise<void>;
 
-    constructor(
-        baseURL: string,
-        privateKey: string,
-        rateLimiter: RateLimiter,
-        assetToIndexMap: Map<string, number>,
-        exchangeToInternalNameMap: Map<string, string>,
-        initializationPromise: Promise<void>
-    ) {
-        this.httpApi = new HttpApi(baseURL, ENDPOINTS.EXCHANGE, rateLimiter);
+    constructor(protected httpApi: HttpApi, private readonly infoAPI: InfoAPI, privateKey: string) {
         this.wallet = new ethers.Wallet(privateKey);
-        this.assetToIndexMap = assetToIndexMap;
-        this.exchangeToInternalNameMap = exchangeToInternalNameMap;
-        this.initializationPromise = initializationPromise;
-    }
-
-    updateAssetMaps(assetToIndexMap: Map<string, number>, exchangeToInternalNameMap: Map<string, string>): void {
-        this.assetToIndexMap = assetToIndexMap;
-        this.exchangeToInternalNameMap = exchangeToInternalNameMap;
     }
 
     private async getAssetIndex(symbol: string): Promise<number> {
-        await this.initializationPromise;
-        const index = this.assetToIndexMap.get(symbol);
+        const index = this.infoAPI.getAssetIndex(symbol);
         if (index === undefined) {
             throw new Error(`Unknown asset: ${symbol}`);
         }

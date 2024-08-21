@@ -1,8 +1,9 @@
-import { RateLimiter } from '../utils/rateLimiter';
 import { GeneralInfoAPI } from './info/general';
 import { SpotInfoAPI } from './info/spot';
 import { PerpsInfoAPI } from './info/perps';
 import { HttpApi } from '../utils/helpers';
+import { SymbolConverter } from '../utils/symbolConverter';
+import { BaseInfoAPI } from './info/base';
 import type {
     AllMids,
     UserOpenOrders,
@@ -13,51 +14,22 @@ import type {
     L2Book,
     CandleSnapshot,
 } from '../types';
-import { ENDPOINTS } from '../constants';
 
-export class InfoAPI {
+export class InfoAPI extends BaseInfoAPI {
+    public readonly generalAPI: GeneralInfoAPI;
     public readonly spot: SpotInfoAPI;
     public readonly perpetuals: PerpsInfoAPI;
-    private readonly httpApi: HttpApi;
-    public readonly generalAPI: GeneralInfoAPI;
 
-    private readonly assetToIndexMap: Map<string, number>;
-    private readonly exchangeToInternalNameMap: Map<string, string>;
-    private readonly initializationPromise: Promise<void>;
+    constructor(httpApi: HttpApi) {
+        const symbolConverter = new SymbolConverter();
+        super(httpApi, symbolConverter);
 
-    constructor(
-        baseURL: string,
-        rateLimiter: RateLimiter,
-        assetToIndexMap: Map<string, number>,
-        exchangeToInternalNameMap: Map<string, string>,
-        initializationPromise: Promise<void>
-    ) {
-        this.httpApi = new HttpApi(baseURL, ENDPOINTS.INFO, rateLimiter);
-        this.assetToIndexMap = assetToIndexMap;
-        this.exchangeToInternalNameMap = exchangeToInternalNameMap;
-        this.initializationPromise = initializationPromise;
-
-        this.generalAPI = new GeneralInfoAPI(this.httpApi, this.exchangeToInternalNameMap, this.initializationPromise);
-        this.spot = new SpotInfoAPI(this.httpApi, this.exchangeToInternalNameMap, this.initializationPromise);
-        this.perpetuals = new PerpsInfoAPI(this.httpApi, this.exchangeToInternalNameMap, this.initializationPromise);
+        this.generalAPI = new GeneralInfoAPI(this.httpApi, this.symbolConverter);
+        this.spot = new SpotInfoAPI(this.httpApi, this.symbolConverter);
+        this.perpetuals = new PerpsInfoAPI(this.httpApi, this.symbolConverter);
     }
 
-    async ensureInitialized(): Promise<void> {
-        await this.initializationPromise;
-    }
-
-    getAssetIndex(assetName: string): number | undefined {
-        return this.assetToIndexMap.get(assetName);
-    }
-
-    getInternalName(exchangeName: string): string | undefined {
-        return this.exchangeToInternalNameMap.get(exchangeName);
-    }
-
-    getAllAssets(): string[] {
-        return Array.from(this.assetToIndexMap.keys());
-    }
-
+    // Delegate methods to GeneralInfoAPI
     async getAllMids(raw_response: boolean = false): Promise<AllMids> {
         return this.generalAPI.getAllMids(raw_response);
     }
