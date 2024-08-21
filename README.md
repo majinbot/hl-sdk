@@ -123,6 +123,8 @@ The SDK uses a consistent naming convention for symbols:
 #### Perpetuals: <coin>-PERP (e.g., BTC-PERP, ETH-PERP)
 #### Spot: <coin>-SPOT (e.g., BTC-SPOT, ETH-SPOT)
 
+Please refer to [SYMBOLS.md](SYMBOLS.md) for more detailed info
+
 ## Error Handling
 The SDK uses custom error types. Wrap API calls in try-catch blocks:
 ```typescript
